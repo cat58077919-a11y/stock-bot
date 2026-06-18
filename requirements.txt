@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+line-bot-sdk==3.0.0
+yfinance
+groq
+python-dotenv
+requests
+beautifulsoup4
+SQLAlchemy
+psycopg2-binary
