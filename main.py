@@ -16,7 +16,8 @@ from linebot.v3.messaging import (
 )
 from linebot.v3.webhooks import (
     MessageEvent,
-    TextMessageContent
+    TextMessageContent,
+    FollowEvent
 )
 from dotenv import load_dotenv
 from bot_logic import handle_user_message
@@ -100,6 +101,13 @@ async def handle_callback(request: Request, background_tasks: BackgroundTasks):
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     for event in events:
+        # 當使用者加入好友或解除封鎖時，會觸發 FollowEvent
+        if isinstance(event, FollowEvent):
+            user_id = event.source.user_id
+            # 偽裝成使用者輸入了「幫助」指令，交給背景處理
+            background_tasks.add_task(process_and_reply, event, user_id, "幫助")
+            continue
+            
         if not isinstance(event, MessageEvent):
             continue
         if not isinstance(event.message, TextMessageContent):

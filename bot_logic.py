@@ -71,14 +71,19 @@ def handle_user_message(user_id: str, text: str) -> list:
         
     elif text.upper() == "HELP" or text == "幫助" or text == "說明":
         help_text = (
-            "歡迎使用股票追蹤機器人！\n"
-            "可用指令：\n"
-            "1. 追蹤 [代碼]：新增追蹤（例如：追蹤 AAPL）\n"
+            "歡迎使用智能股票助理！🤖\n\n"
+            "⚠️ 【股票代碼輸入規則】\n"
+            "• 美股：直接輸入 (例: AAPL, NVDA)\n"
+            "• 台股上市：需加 .TW (例: 2330.TW)\n"
+            "• 台股上櫃：需加 .TWO (例: 6173.TWO)\n"
+            "*(指令與代碼之間請加一個空白)*\n\n"
+            "📌 【可用指令】\n"
+            "1. 追蹤 [代碼]：新增追蹤名單\n"
             "2. 取消追蹤 [代碼]：移除追蹤\n"
-            "3. 我的追蹤：檢視目前追蹤名單\n"
-            "4. 查詢 [代碼]：取得即時股價、公司資訊與新聞\n"
-            "5. 測試盤中監控：立即執行盤中警示檢查\n"
-            "6. 測試盤後報告：立即執行盤後 AI 分析"
+            "3. 我的追蹤：檢視目前清單\n"
+            "4. 查詢 [代碼]：取得即時股價與 AI 健檢\n"
+            "5. 測試盤中監控：執行盤中異常掃描\n"
+            "6. 測試盤後報告：執行盤後 AI 籌碼解析"
         )
         return [TextMessage(text=help_text)]
         
@@ -254,3 +259,61 @@ def generate_stock_report(symbol: str) -> list:
     flex_container = FlexContainer.from_dict(carousel_json)
     return [FlexMessage(alt_text=f"{company_name} 完整報告", contents=flex_container)]
 
+
+def generate_news_report(symbol: str) -> list:
+    """單獨產生雙語新聞的 Flex Message"""
+    
+    info_data = get_company_info_and_financials(symbol)
+    company_name = info_data.get('name', symbol)
+    
+    news_data = get_latest_news(symbol, company_name)
+    
+    news_contents = [
+        {"type": "text", "text": f"{company_name} 最新新聞", "weight": "bold", "size": "xl", "color": "#1DB446", "margin": "md", "wrap": True}
+    ]
+    
+    if isinstance(news_data, list) and len(news_data) > 0:
+        for news in news_data:
+            lang_label = "🇹🇼" if news["lang"] == "zh" else "🇺🇸"
+            news_box = {
+                "type": "box",
+                "layout": "vertical",
+                "margin": "lg",
+                "contents": [
+                    {
+                        "type": "text",
+                        "text": f"{lang_label} {news['title']}",
+                        "size": "sm",
+                        "wrap": True,
+                        "color": "#111111",
+                        "weight": "bold"
+                    },
+                    {
+                        "type": "text",
+                        "text": f"{news['publisher']} - {news['timestamp']}",
+                        "size": "xs",
+                        "color": "#aaaaaa",
+                        "margin": "sm"
+                    }
+                ],
+                "action": {
+                    "type": "uri",
+                    "label": "action",
+                    "uri": news["link"] if news["link"] else "https://finance.yahoo.com/"
+                }
+            }
+            news_contents.append(news_box)
+    else:
+        news_contents.append({"type": "text", "text": "暫無相關新聞", "size": "sm", "color": "#aaaaaa"})
+
+    bubble = {
+        "type": "bubble",
+        "size": "giga",
+        "body": {
+            "type": "box", "layout": "vertical", "spacing": "md",
+            "contents": news_contents
+        }
+    }
+
+    flex_container = FlexContainer.from_dict(bubble)
+    return [FlexMessage(alt_text=f"{company_name} 最新新聞", contents=flex_container)]
