@@ -77,8 +77,10 @@ async def post_market_job():
             await asyncio.to_thread(send_email, "【盤後報告】每日股票 AI 解析", email_content)
 
 async def scheduler_loop():
+    # 設定為台灣時間 (UTC+8)，避免 Render 主機預設為 UTC 導致排程時間錯亂
+    tz_taipei = datetime.timezone(datetime.timedelta(hours=8))
     while True:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(tz_taipei)
         
         # Intraday Scan: 09:00 to 13:30, every 30 minutes
         # Just simple modulo logic: Check if minute is 0 or 30
