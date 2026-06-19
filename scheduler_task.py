@@ -82,19 +82,21 @@ async def scheduler_loop():
     while True:
         now = datetime.datetime.now(tz_taipei)
         
-        # Intraday Scan: 09:00 to 13:30, every 30 minutes
-        # Just simple modulo logic: Check if minute is 0 or 30
-        if 9 <= now.hour <= 13:
-            if now.hour == 13 and now.minute > 30:
-                pass # Market closed
-            elif now.minute in [0, 30]:
-                # We use asyncio.create_task so it doesn't block the exact minute check
-                asyncio.create_task(intraday_job())
-                await asyncio.sleep(60) # Wait 1 minute to avoid triggering again in the same minute
+        # 只在週一至週五 (weekday 0~4) 執行監控，避免假日休市也去探測
+        if now.weekday() < 5:
+            # Intraday Scan: 09:00 to 13:30, every 30 minutes
+            # Just simple modulo logic: Check if minute is 0 or 30
+            if 9 <= now.hour <= 13:
+                if now.hour == 13 and now.minute > 30:
+                    pass # Market closed
+                elif now.minute in [0, 30]:
+                    # We use asyncio.create_task so it doesn't block the exact minute check
+                    asyncio.create_task(intraday_job())
+                    await asyncio.sleep(60) # Wait 1 minute to avoid triggering again in the same minute
 
-        # Post Market Scan: exactly at 18:30
-        if now.hour == 18 and now.minute == 30:
-            asyncio.create_task(post_market_job())
-            await asyncio.sleep(60)
+            # Post Market Scan: exactly at 18:30
+            if now.hour == 18 and now.minute == 30:
+                asyncio.create_task(post_market_job())
+                await asyncio.sleep(60)
             
         await asyncio.sleep(20) # Check every 20 seconds
