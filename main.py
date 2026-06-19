@@ -126,6 +126,7 @@ async def handle_callback(request: Request, background_tasks: BackgroundTasks):
     return "OK"
 
 @app.get("/")
+@app.head("/")
 def root():
     return {"status": "running"}
 
